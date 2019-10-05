@@ -47,14 +47,6 @@ validate_grid left right up bottom grid =
      reverse_validate_rows right grid &&
      validate_rows up (Data.List.transpose grid) &&
      reverse_validate_rows bottom (Data.List.transpose grid)
-
--- first_prune :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Grid
--- first_prune left right up bottom g =
---   if (1 `elem` left) then
---     i1 elemIndex left 
-
-
--- .........................
 readGrid :: String -> Maybe Grid
 readGrid s
   | length s == 25 = traverse (traverse readCell) . Data.List.Split.chunksOf 5 $ s
@@ -98,8 +90,8 @@ pruneGrid = fixM pruneGrid'
 isGridFilled :: Grid -> Bool
 isGridFilled grid = null [ () | Possible _ <- concat grid ]
 
-isGridInvalid :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Bool
-isGridInvalid l r u b grid =
+isGridInvalid :: Grid -> Bool
+isGridInvalid grid =
   any isInvalidRow grid
   || any isInvalidRow (Data.List.transpose grid)
 
@@ -145,29 +137,23 @@ solve :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
 solve l r u b grid = pruneGrid grid >>= solve' l r u b
   where
     solve' l r u b g
-      | isGridInvalid l r u b g = Nothing
-      | isGridFilled g = Just g
+      | isGridInvalid g || (isGridFilled g && not(validate_grid l r u b g)) = Nothing
+      | validate_grid l r u b g = Just g
       | otherwise       =
           let (grid1, grid2) = nextGrids g
           in solve l r u b grid1 <|> solve l r u b grid2
 
 main = do
-  let left   = [1, 4, 3, 2, 3]
-  let right  = [3, 2, 3, 2, 1]
-  let up     = [1, 3, 3, 2, 3]
-  let bottom = [3, 2, 2, 2, 1]
-  -- let Just grid = readGrid "5314212354345214521321435"
-  -- let Just solved_grid = solve left right up bottom grid
-  -- putStrLn $ showGridWithPossibilities grid
-  -- print validate_row left grid
-  -- print reverse_validate_rows right grid
-  -- print validate_row up 
-  -- putStrLn $ showGridWithPossibilities solved_grid
+  let left   = [1, 4, 3, 2, 0]
+  let right  = [3, 2, 3, 0, 1]
+  let up     = [0, 3, 3, 0, 0]
+  let bottom = [0, 2, 2, 2, 1]
+  -- .........................
 
+  -- SOLUÇÃO "5314212354345214521321435"
 
+  -- INPUT SÓ COM CINCOS 5.......................5
 
--- putStrLn $ validate_grid readGrid "5314212354345214521321435"
--- print("")
   inputs <- lines <$> getContents
   Control.Monad.forM_ inputs $ \input ->
     case readGrid input of
@@ -175,6 +161,3 @@ main = do
       Just grid -> case solve left right up bottom grid of
         Nothing    -> putStrLn "No solution found"
         Just grid' -> putStrLn $ showGridWithPossibilities grid'
-
-
-
