@@ -13,7 +13,7 @@ type Grid = [Row]
 
 replace2D :: Int -> a -> [[a]] -> [[a]]
 replace2D i v =
-    let (x, y) = (i `quot` 5, i `mod` 5) 
+    let (x, y) = (i `quot` 6, i `mod` 6) 
     in replace x (replace y (const v))
 
 replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
@@ -21,22 +21,22 @@ replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
 first_prune_left :: [Int] -> Grid -> Grid
 first_prune_left [] g = g
 first_prune_left (a:b) g =
-  first_prune_left b (replace2D (a * 5 + 0) (Fixed 5) g)
+  first_prune_left b (replace2D (a * 6 + 0) (Fixed 6) g)
 
 first_prune_right :: [Int] -> Grid -> Grid
 first_prune_right [] g = g
 first_prune_right (a:b) g =
-  first_prune_right b (replace2D (a * 5 + 4) (Fixed 5) g)
+  first_prune_right b (replace2D (a * 6 + 5) (Fixed 6) g)
 
 first_prune_up :: [Int] -> Grid -> Grid
 first_prune_up [] g = g
 first_prune_up (a:b) g =
-  first_prune_up b (replace2D (0 + a) (Fixed 5) g)
+  first_prune_up b (replace2D (0 + a) (Fixed 6) g)
 
-first_prune_bottom :: [Int] -> Grid -> Grid
-first_prune_bottom [] g = g
-first_prune_bottom (a:b) g =
-  first_prune_bottom b (replace2D (20 +  a) (Fixed 5) g)
+first_prune_down :: [Int] -> Grid -> Grid
+first_prune_down [] g = g
+first_prune_down (a:b) g =
+  first_prune_down b (replace2D (30 +  a) (Fixed 6) g)
 
 
 validate_row :: Int -> [Int] -> Int
@@ -70,17 +70,17 @@ validate_rows (a:b) (head:tail) =
       False
 
 validate_grid :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Bool
-validate_grid left right up bottom grid =
+validate_grid left right up down grid =
      validate_rows left grid &&
      reverse_validate_rows right grid &&
      validate_rows up (Data.List.transpose grid) &&
-     reverse_validate_rows bottom (Data.List.transpose grid)
+     reverse_validate_rows down (Data.List.transpose grid)
 readGrid :: String -> Maybe Grid
 readGrid s
-  | length s == 25 = traverse (traverse readCell) . Data.List.Split.chunksOf 5 $ s
+  | length s == 36 = traverse (traverse readCell) . Data.List.Split.chunksOf 6 $ s
   | otherwise      = Nothing
   where
-    readCell '.' = Just $ Possible [1..5]
+    readCell '.' = Just $ Possible [1..6]
     readCell c
       | Data.Char.isDigit c && c > '0' = Just . Fixed . Data.Char.digitToInt $ c
       | otherwise = Nothing
@@ -92,7 +92,7 @@ showGridWithPossibilities = unlines . map (unwords . map showCell)
     showCell (Possible xs) =
       (++ "]")
       . Data.List.foldl' (\acc x -> acc ++ if x `elem` xs then show x else " ") "["
-      $ [1..5]
+      $ [1..6]
 
 pruneCells :: [Cell] -> Maybe [Cell]
 pruneCells cells = traverse pruneCell cells
@@ -158,29 +158,30 @@ nextGrids grid =
     fixCell _                    = error "Impossible case"
 
 solve :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
-solve l r u b grid = pruneGrid grid >>= solve' l r u b
+solve l r u d grid = pruneGrid grid >>= solve' l r u d
   where
-    solve' l r u b g
-      | isGridInvalid g || (isGridFilled g && not(validate_grid l r u b g)) = Nothing
-      | validate_grid l r u b g = Just g
+    solve' l r u d g
+      | isGridInvalid g || (isGridFilled g && not(validate_grid l r u d g)) = Nothing
+      | validate_grid l r u d g = Just g
       | otherwise       =
           let (grid1, grid2) = nextGrids g
-          in solve l r u b grid1 <|> solve l r u b grid2
+          in solve l r u d grid1 <|> solve l r u d grid2
 
 solve_all :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
-solve_all l r u b =
-    solve l r u b
+solve_all l r u d =
+    solve l r u d
     . first_prune_left (Data.List.elemIndices 1 l)
     . first_prune_right (Data.List.elemIndices 1 r)
     . first_prune_up (Data.List.elemIndices 1 u)
-    . first_prune_bottom (Data.List.elemIndices 1 b)
+    . first_prune_down (Data.List.elemIndices 1 d)
 
 main = do
-  let left   = [1, 4, 3, 2, 0]
-  let right  = [3, 2, 3, 0, 1]
-  let up     = [0, 3, 3, 0, 0]
-  let bottom = [0, 2, 2, 2, 1]
-  -- .........................
+  let left   = [3, 2, 2, 3, 2, 1]
+  let right  = [1, 2, 3, 4, 4, 2]
+  let up     = [3, 2, 3, 2, 2, 1]
+  let down   = [1, 2, 3, 4, 3, 2]
+  -- ....................................
+--   1.....52....3..........1.......3....
 
   -- SOLUÇÃO "5314212354345214521321435"
 
@@ -190,6 +191,7 @@ main = do
   Control.Monad.forM_ inputs $ \input ->
     case readGrid input of
       Nothing   -> putStrLn "Invalid input"
-      Just grid -> case solve_all left right up bottom grid of
+    --   Just grid -> putStrLn $ showGridWithPossibilities $ solve_all left right up down grid
+      Just grid -> case solve_all left right up down grid of
         Nothing    -> putStrLn "No solution found"
         Just grid' -> putStrLn $ showGridWithPossibilities grid'
