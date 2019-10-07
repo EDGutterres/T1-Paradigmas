@@ -11,6 +11,47 @@ data Cell = Fixed Int | Possible [Int] deriving (Show, Eq)
 type Row  = [Cell]
 type Grid = [Row]
 
+
+-- 00 | 01 | 02 | 03 | 04
+-- 10 |              | 14
+-- 20 |              | 24
+-- 30 |              | 34
+-- 40 | 41 | 42 | 43 | 44
+
+-- 00 | 01 | 02 | 03 | 04
+-- 05 |              | 09
+-- 10 |              | 14
+-- 15 |              | 19
+-- 20 | 21 | 22 | 23 | 24
+
+replace2D :: Int -> a -> [[a]] -> [[a]]
+replace2D i v =
+    let (x, y) = (i `quot` 5, i `mod` 5) 
+    in replace x (replace y (const v))
+
+replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
+
+first_prune_left :: [Int] -> Grid -> Grid
+first_prune_left [] g = g
+first_prune_left (a:b) g =
+  first_prune_left b (replace2D (a * 5 + 0) (Fixed 5) g)
+
+first_prune_right :: [Int] -> Grid -> Grid
+first_prune_right [] g = g
+first_prune_right (a:b) g =
+  first_prune_right b (replace2D (a * 5 + 4) (Fixed 5) g)
+
+first_prune_up :: [Int] -> Grid -> Grid
+first_prune_up [] g = g
+first_prune_up (a:b) g =
+  first_prune_up b (replace2D (0 + a) (Fixed 5) g)
+
+first_prune_bottom :: [Int] -> Grid -> Grid
+first_prune_bottom [] g = g
+first_prune_bottom (a:b) g =
+  first_prune_bottom b (replace2D (20 +  a) (Fixed 5) g)
+
+
 validate_row :: Int -> [Int] -> Int
 validate_row _ [] = 0
 validate_row pivot (head:tail) =
@@ -129,10 +170,6 @@ nextGrids grid =
     fixCell (i, Possible (x:xs)) = (i, Fixed x, Possible xs)
     fixCell _                    = error "Impossible case"
 
-    replace2D :: Int -> a -> [[a]] -> [[a]]
-    replace2D i v = let (x, y) = (i `quot` 5, i `mod` 5) in replace x (replace y (const v))
-    replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
-
 solve :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
 solve l r u b grid = pruneGrid grid >>= solve' l r u b
   where
@@ -143,11 +180,25 @@ solve l r u b grid = pruneGrid grid >>= solve' l r u b
           let (grid1, grid2) = nextGrids g
           in solve l r u b grid1 <|> solve l r u b grid2
 
+solve_all :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
+solve_all l r u b =
+    solve l r u b
+    . first_prune_left (Data.List.elemIndices 1 l)
+    . first_prune_right (Data.List.elemIndices 1 r)
+    . first_prune_up (Data.List.elemIndices 1 u)
+    . first_prune_bottom (Data.List.elemIndices 1 b)
+  -- where solve l r u b grid'
+
 main = do
   let left   = [1, 4, 3, 2, 0]
   let right  = [3, 2, 3, 0, 1]
   let up     = [0, 3, 3, 0, 0]
   let bottom = [0, 2, 2, 2, 1]
+
+  -- let left   = [1, 4, 3, 1, 0]
+  -- let right  = [3, 2, 1, 0, 1]
+  -- let up     = [0, 1, 3, 0, 0]
+  -- let bottom = [0, 2, 2, 2, 1]
   -- .........................
 
   -- SOLUÇÃO "5314212354345214521321435"
@@ -158,6 +209,6 @@ main = do
   Control.Monad.forM_ inputs $ \input ->
     case readGrid input of
       Nothing   -> putStrLn "Invalid input"
-      Just grid -> case solve left right up bottom grid of
+      Just grid -> case solve_all left right up bottom grid of
         Nothing    -> putStrLn "No solution found"
         Just grid' -> putStrLn $ showGridWithPossibilities grid'
