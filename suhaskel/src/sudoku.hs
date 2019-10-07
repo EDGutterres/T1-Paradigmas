@@ -11,19 +11,6 @@ data Cell = Fixed Int | Possible [Int] deriving (Show, Eq)
 type Row  = [Cell]
 type Grid = [Row]
 
-
--- 00 | 01 | 02 | 03 | 04
--- 10 |              | 14
--- 20 |              | 24
--- 30 |              | 34
--- 40 | 41 | 42 | 43 | 44
-
--- 00 | 01 | 02 | 03 | 04
--- 05 |              | 09
--- 10 |              | 14
--- 15 |              | 19
--- 20 | 21 | 22 | 23 | 24
-
 replace2D :: Int -> a -> [[a]] -> [[a]]
 replace2D i v =
     let (x, y) = (i `quot` 5, i `mod` 5) 
@@ -187,18 +174,12 @@ solve_all l r u b =
     . first_prune_right (Data.List.elemIndices 1 r)
     . first_prune_up (Data.List.elemIndices 1 u)
     . first_prune_bottom (Data.List.elemIndices 1 b)
-  -- where solve l r u b grid'
 
 main = do
   let left   = [1, 4, 3, 2, 0]
   let right  = [3, 2, 3, 0, 1]
   let up     = [0, 3, 3, 0, 0]
   let bottom = [0, 2, 2, 2, 1]
-
-  -- let left   = [1, 4, 3, 1, 0]
-  -- let right  = [3, 2, 1, 0, 1]
-  -- let up     = [0, 1, 3, 0, 0]
-  -- let bottom = [0, 2, 2, 2, 1]
   -- .........................
 
   -- SOLUÇÃO "5314212354345214521321435"
