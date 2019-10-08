@@ -18,7 +18,7 @@ module Main where
       let (x, y) = (i `quot` 6, i `mod` 6)
       -- a função const retorna o primeiro elemento passado como parametro
       in replace x (replace y (const v))
-
+  replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
   -- 'p' é o indice dentro do row/grid, f é a função a ser aplicado no indice 'p' para obter o novo valor
   -- da cell, xs é a row/grid
 
@@ -31,7 +31,6 @@ module Main where
   --     | 
   --       (x, i) <- zip xs [0..]
   --   ]
-  replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
 
   -- Retorna um novo Grid, adicionando 6 nas linhas da primeira coluna onde
   -- deve-se enxergar apenas um elemento. A lista passada contêm os indices dos elementos dentro da linha/coluna

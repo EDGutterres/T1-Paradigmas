@@ -11,6 +11,8 @@ data Cell = Fixed Int | Possible [Int] deriving (Show, Eq)
 type Row  = [Cell]
 type Grid = [Row]
 
+-- O CÓDIGO FUNCIONA EXATAMENTE DA MESMA FORMA QUE A VERSÃO 6X6; TODOS OS COMENTÁRIOS LÁ PRESENETES
+-- SE APLICAM PARA ESSA VERSÃO 5X5;
 replace2D :: Int -> a -> [[a]] -> [[a]]
 replace2D i v =
     let (x, y) = (i `quot` 5, i `mod` 5) 
