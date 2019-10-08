@@ -11,38 +11,57 @@ module Main where
   type Row  = [Cell]
   type Grid = [Row]
 
-  -- refaz a Grid usando o int para a posicao e a para o valor
+  -- Retorna um nova Grid, substituindo o elemento 'v' no indice 'i' passado
   replace2D :: Int -> a -> [[a]] -> [[a]]
   replace2D i v =
+    -- x é a linha, y é a coluna
       let (x, y) = (i `quot` 6, i `mod` 6)
+      -- a função const retorna o primeiro elemento passado como parametro
       in replace x (replace y (const v))
+
+  -- 'p' é o indice dentro do row/grid, f é a função a ser aplicado no indice 'p' para obter o novo valor
+  -- da cell, xs é a row/grid
+
+  -- replace p f xs = 
+  --   [
+  --     if i == p then 
+  --       f x -- aplica f na linha/coluna que será substituída
+  --     else 
+  --       x 
+  --     | 
+  --       (x, i) <- zip xs [0..]
+  --   ]
   replace p f xs = [if i == p then f x else x | (x, i) <- zip xs [0..]]
 
-  -- Metodo para podar quando houver um numero "1" na borda da esquerda
+  -- Retorna um novo Grid, adicionando 6 nas linhas da primeira coluna onde
+  -- deve-se enxergar apenas um elemento. A lista passada contêm os indices dos elementos dentro da linha/coluna
   first_prune_left :: [Int] -> Grid -> Grid
   first_prune_left [] g = g
   first_prune_left (a:b) g =
     first_prune_left b (replace2D (a * 6 + 0) (Fixed 6) g)
 
-  -- Metodo para podar quando houver um numero "1" na borda da direita
+  -- Retorna um novo Grid, adicionando 6 nas linhas da última coluna onde
+  -- deve-se enxergar apenas um elemento. A lista passada contêm os indices dos elementos dentro da linha/coluna
   first_prune_right :: [Int] -> Grid -> Grid
   first_prune_right [] g = g
   first_prune_right (a:b) g =
     first_prune_right b (replace2D (a * 6 + 5) (Fixed 6) g)
 
-  -- Metodo para podar quando houver um numero "1" na borda de cima
+  -- Retorna um novo Grid, adicionando 6 nas colunas da primeira linha onde
+  -- deve-se enxergar apenas um elemento. A lista passada contêm os indices dos elementos dentro da linha/coluna
   first_prune_up :: [Int] -> Grid -> Grid
   first_prune_up [] g = g
   first_prune_up (a:b) g =
     first_prune_up b (replace2D (0 + a) (Fixed 6) g)
 
-  -- Metodo para podar quando houver um numero "1" na borda da baixo
+  -- Retorna um novo Grid, adicionando 6 nas colunas da última linha onde
+  -- deve-se enxergar apenas um elemento. A lista passada contêm os indices dos elementos dentro da linha/coluna
   first_prune_down :: [Int] -> Grid -> Grid
   first_prune_down [] g = g
   first_prune_down (a:b) g =
     first_prune_down b (replace2D (30 +  a) (Fixed 6) g)
 
-  -- metodo que soma quantos predios podem ser visto na linha dada
+  -- Metodo que soma quantos predios podem ser visto na linha dada
   validate_row :: Int -> [Int] -> Int
   validate_row _ [] = 0
   validate_row pivot (head:tail) =
@@ -51,7 +70,8 @@ module Main where
     else
       validate_row pivot tail
 
-  -- metodo que verifica se as linhas possuem o numero de predios vistos corretos na ordem inversa (para usar nos metodos left e down)
+  -- Metodo que verifica se quantidade de prédios que podem ser vistos
+  -- olhando pela parte de baixo/direita do tabuleiro está correta
   reverse_validate_rows :: [Int] -> Grid -> Bool
   reverse_validate_rows [] [] = True
   reverse_validate_rows (a:b) (head:tail) =
@@ -62,7 +82,8 @@ module Main where
         reverse_validate_rows b tail
       else
         False
-  -- metodo que verifica se as linhas possuem o numero de predios vistos corretos
+  -- Metodo que verifica se quantidade de prédios que podem ser vistos
+  -- olhando pela parte de cima/esquerta do tabuleiro está correta  
   validate_rows :: [Int] -> Grid -> Bool
   validate_rows [] [] = True
   validate_rows (a:b) (head:tail) =
@@ -74,7 +95,8 @@ module Main where
       else
         False
 
-  -- chama metodos necessarios para verificar se a grid existente é uma solucao
+  -- Chama metodos necessarios para verificar se a grid existente é uma solucao
+  -- válida para as condições de visibilidade passada
   validate_grid :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Bool
   validate_grid left right up down grid =
        validate_rows left grid &&
@@ -82,7 +104,7 @@ module Main where
        validate_rows up (Data.List.transpose grid) &&
        reverse_validate_rows down (Data.List.transpose grid)
 
-  -- construção da Grid para manipulacao
+  -- Construção da Grid para manipulacao
   readGrid :: String -> Maybe Grid
   readGrid s
     | length s == 36 = traverse (traverse readCell) . Data.List.Split.chunksOf 6 $ s
@@ -93,7 +115,7 @@ module Main where
         | Data.Char.isDigit c && c > '0' = Just . Fixed . Data.Char.digitToInt $ c
         | otherwise = Nothing
 
-  -- metodo para printar a solução de maneira
+  -- Metodo para printar a solução de maneira que seja possível ver todas as possibilidades
   showGridWithPossibilities :: Grid -> String
   showGridWithPossibilities = unlines . map (unwords . map showCell)
     where
@@ -103,7 +125,8 @@ module Main where
         . Data.List.foldl' (\acc x -> acc ++ if x `elem` xs then show x else " ") "["
         $ [1..6]
 
-  -- elimina a possibilidade de um numero na linha e coluna qnd ele eh fixed
+  -- Obtêm os números fixos de uma linha, e logo após isso os retira de todas as células da linha
+  -- que não estão com valores fixados
   pruneCells :: [Cell] -> Maybe [Cell]
   pruneCells cells = traverse pruneCell cells
     where
@@ -115,7 +138,7 @@ module Main where
         ys  -> Just $ Possible ys
       pruneCell x = Just x
 
--- faz o prunecells para toda as celulas
+  -- Aplica o método pruneCells para todos os elementos da Grid
   pruneGrid' :: Grid -> Maybe Grid
   pruneGrid' grid =
     traverse pruneCells grid
@@ -126,7 +149,7 @@ module Main where
     where
       fixM f x = f x >>= \x' -> if x' == x then return x else fixM f x'
 
--- verifica se há apenas numeros Fixeds, ou seja, achou uma possivel solucao
+  -- Verifica se há apenas numeros Fixeds e distintos na linhas e colunas da Grid
   isGridFilled :: Grid -> Bool
   isGridFilled grid = null [ () | Possible _ <- concat grid ]
 
@@ -148,13 +171,15 @@ module Main where
         | y `elem` xs = True
         | otherwise   = hasDups' ys (y:xs)
 
+  -- Gera as duas próximas possibilidades de Grid considerando a fixação de um elemento do
+  -- primeiro elemento de um Cell arbitrária(geralmente a contém o menor número de possibilidades)
   nextGrids :: Grid -> (Grid, Grid)
   nextGrids grid =
     let (i, first@(Fixed _), rest) =
           fixCell
-          . Data.List.minimumBy (compare `Data.Function.on` (possibilityCount . snd))
-          . filter (isPossible . snd)
-          . zip [0..]
+          . Data.List.minimumBy (compare `Data.Function.on` (possibilityCount . snd)) -- seleciona a Cell com menor número de possibilidades
+          . filter (isPossible . snd) -- filtra as Cells que possuem possibilidades de elementos
+          . zip [0..] -- gera indices(no formato de lista unidimencional)
           . concat
           $ grid
     in (replace2D i first grid, replace2D i rest grid)
@@ -169,7 +194,7 @@ module Main where
       fixCell (i, Possible (x:xs)) = (i, Fixed x, Possible xs)
       fixCell _                    = error "Impossible case"
 
--- metodo onde o backtracking acontece, toda vez que uma grid nao esta cheia e nao esta validada ela parte para a proxima grid como se fosse uma busca em largura
+-- Metodo onde o backtracking acontece, toda vez que uma Grid nao esta cheia e nao esta validada ela parte para a proxima grid como se fosse uma busca em largura
   solve :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
   solve l r u d grid = pruneGrid grid >>= solve' l r u d
     where
@@ -180,7 +205,7 @@ module Main where
             let (grid1, grid2) = nextGrids g
             in solve l r u d grid1 <|> solve l r u d grid2
 
--- chama todos os metodos necessarios para resolver
+-- Chama todos os metodos necessarios para resolver
   solve_all :: [Int] -> [Int] -> [Int] -> [Int] -> Grid -> Maybe Grid
   solve_all l r u d =
       solve l r u d
